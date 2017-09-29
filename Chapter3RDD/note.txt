@@ -1,0 +1,38 @@
+1. What's RDD?
+RDD is simply an IMMUTABLE distributed collection of elements.
+
+2. What's the role of RDD?
+RDD is the core abstraction for working with data. In Spark, all work is
+expressed as either creating new RDDS, transforming existing RDDs, or calling
+operations on RDDs to compute a result.
+
+3. RDD has two types of operations: transformations and actions. These two
+types of operations are similar to the intermediate and terminal operations of
+Java Stream class. RDD adopts lazy execution of for the operations. The
+expression is not evaluated until an action operation is called on the RDD.
+
+The theory of Spark is that, store as small data as possible. So, Sparks tries
+to avoid storing any unnecessary data. Lazy execution is one way to realize
+this goal. Also, all intermediate will be dropped. Each time an action is
+called on a RDD, the whole process will re-run again.
+
+If sometimes we do want to store the intermediate result for future reuse, we
+can call 'persist()' on the RDD. This will store the RDD
+in memory for future reuse.
+
+4. Creating RDDs
+There are two ways to create RDDs. One is to load data from external
+resources, such as dataset. There are a lot of functions to do this. Another
+way is using sc.parallelize() method to manually create a RDD. This way is
+more on ad-hoc experiments, since the user has to manually specify all the
+data and all the data will be stored in memory on a single machine.
+
+5. More on RDD transformations
+Transformations return a new RDD, while actions return some other type of
+data. We already know that, transformations are not evaluated until an action
+is called. As I have guessed, Spark build a DAG to store the relations between
+each RDD, so that Spark knows how to compute the desired RDD later. Other than
+computing the compute sequence, the DAG also helps to recover lost data in
+persistent RDD.
+
+6. Lazy evaluation also happens in loading data.
