@@ -36,3 +36,21 @@ computing the compute sequence, the DAG also helps to recover lost data in
 persistent RDD.
 
 6. Lazy evaluation also happens in loading data.
+
+7. Common Operations on RDD
+7.1 Element-wise transformations
+map(), flatMap(), filter()
+7.2 Pseudo set operations
+RDD1.distinct(), RDD1.union(RDD2),
+RDD1.intersection(RDD2), RDD1.substract(RDD2)
+The reason these operations are called pseudo set is that, RDD allows
+duplicated elements. So, it's not strictly a set.
+
+Among above operations, only union is a lightweight operation. All the other
+operations return RDD contains only unique values. Removing duplicated
+elements requires shuffling all the data over the network. Thus, operations
+involving this process are expensive.
+
+Additionally, RDD provides cartesian() operation, which is used for making
+combinations. 
+
