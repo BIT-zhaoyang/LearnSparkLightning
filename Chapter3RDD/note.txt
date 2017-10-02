@@ -37,10 +37,59 @@ persistent RDD.
 
 6. Lazy evaluation also happens in loading data.
 
-7. Common Operations on RDD
-7.1 Element-wise transformations
+7. Passing Functions to Spark
+Most of Spark's transformations, and some of its actions, depend on passing in
+functions that are used by Spark to compute data. In Python and Scala, passing
+functions as parameters seems easy, but in Java it's a bit more difficult.
+Since functions must be defined as methods in some classes, we can only pass a
+class which contains the desired functions, as parameter, to the target
+function.
+
+To fulfill this requirement, Spark has designed several functional interfaces
+for Java. These interfaces are as follow:
+    7.1 class Function<T, R> {
+        public R call(T);   // Take in one input and return one output, for
+                            // use with operations like map() and filter().
+        }
+     Example:
+        JavaRDD<Integer> rdd = sc.parallelize(Arrays.asList(1, 2, 3, 4));
+        JavaRDD<Integer> result = rdd.map(new Function<Integer, Integer>() {
+            public Integer call(Integer x) { return x * x; }
+        });
+
+    7.2 class Function2<T1, T2, R> {
+        public R call(T1, T2); // Take in two inputs and return one output,
+                               // for use with operations like aggregate() or
+                               // fold()
+        }
+     Example:
+        Integer sum = rdd.reduce(new Function2<Integer, Integer, Integer>() {
+            public Integer call(Integer x, Integer y) { return x + y; }
+        });
+        Integer multi = rdd.fold(0, new Function2<Integer, Integer, Integer>() {
+            public Integer call(Integer x, Integer y) { return x * y; }
+        });
+
+    7.3 class FlatMapFunction<T, R> {
+        public Iterable<R> call(T); // Take in one input and return zero or
+                             // more outputs, for use with operations like
+                             // flatMap().
+        }
+     Example:
+        JavaRDD<String> lines = sc.parallelize(
+                Arrays.asList("hello world","hi"));
+        JavaRDD<String> words = lines.flatMap(
+            new FlatMapFunction<String, String>() {
+                public Iterable<String> call(String line) {
+                    return Arrays.asList(line.split(" "));
+                }
+            });
+
+8. Common Operations on RDD
+8.1 Element-wise transformations
 map(), flatMap(), filter()
-7.2 Pseudo set operations
+
+8.2 Pseudo set operations
 RDD1.distinct(), RDD1.union(RDD2),
 RDD1.intersection(RDD2), RDD1.substract(RDD2)
 The reason these operations are called pseudo set is that, RDD allows
@@ -54,3 +103,73 @@ involving this process are expensive.
 Additionally, RDD provides cartesian() operation, which is used for making
 combinations. 
 
+8.3 Actions
+Aggregation actions: reduce(), fold(), and aggregate().
+
+reduce() and fold() takes a function that operates on two elements of the type
+in your RDD and returns a new element of the SAME type. A simple example can
+be the summation computation, as shown in the 'Example' in 7.2. fold() is
+almost the same with reduce(). The difference is that, it requires a initial
+"identity value", which means it won't apply the value of an element, if it
+was applied to that element multiple times.
+
+aggregate() gives us more freedom. aggregate() also takes three elements. The
+first element is the "identity element" of the returned type. This functions
+as the initial accumulator. The second argument is a Function2 implementation
+which defines the operation rules between the accumulator and the RDD
+element(Because the types of the accumulator and the RDD element can be
+different!). Then the third argument defines the operation rules between two
+accumulators. One example is as follow, which computes the average value in a
+RDD:
+class AvgCount implements Serializable {    // The accumulator type
+    public AvgCount(int total, int num) {
+        this.total = total;
+        this.num = num;
+    }
+    public int total;
+    public int num;
+    public double avg() {
+        return total / (double) num;
+    }
+}
+// Operation rules between the accumulator and RDD element
+Function2<AvgCount, Integer, AvgCount> addAndCount = 
+    new Function2<AvgCount, Integer, AvgCount>() {
+        public AvgCount call(AvgCount a, Integer x) {
+            a.total += x;
+            a.num += 1;
+            return a;
+        }
+    };
+// Operation rules between accumulators
+Function2<AvgCount, AvgCount, AvgCount> combine = 
+    new Function2<AvgCount, AvgCount, AvgCount>() {
+        public AvgCount call(AvgCount a, AvgCount b) {
+            a.total += b.total;
+            a.num += b.num;
+            return a;
+        }
+    };
+// Compute the average of RDD using aggregate()
+AvgCount initial = new AvgCount(0, 0);  // declare init accumulator
+AvgCount result = rdd.aggregate(initial, addAndCount, combine);
+System.out.println(result.avg());
+
+The other common actions return some or all of the data to our driver program.
+Examples are: collect(), take(), and top().
+
+9. Converting Between RDD Types
+Certain types of RDD provides special functions. To access these certain
+functions, we need to know how to convert to these special typed RDDs from
+general ones.
+
+The key is to use the map() function. However, to create the special RDDs,
+special map() function must be used.
+
+JavaRDD<Double> doubleRDD = integerRDD.map(x -> (double)x);
+JavaDoubleRDD doubleRDD = integerRDD.mapToDouble(x -> (double)x);
+
+The JavaDoubleRDD has special functions such as mean(), while JavaRDD<Double>
+doesn't have.
+
+Another special RDD type is JavaPairRDD.
