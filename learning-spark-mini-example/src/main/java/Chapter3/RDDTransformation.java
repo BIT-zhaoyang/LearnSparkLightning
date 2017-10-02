@@ -12,22 +12,10 @@ import org.apache.spark.storage.StorageLevel;
 
 public class RDDTransformation {
     
-    static private void cleanDir(String dirName) {
-        File dir = new File(dirName);
-        String[] entries = dir.list();
-        for(String s : entries) {
-            File currentFile = new File(dir.getPath(), s);
-            currentFile.delete();
-        }
-        dir.delete();
-    }
-    
     public static void main(String[] args) {
         final String INPUT = "shakespear.txt";
-        final String OUTPUT = "result";
         Logger.getLogger("org").setLevel(Level.WARN);
         Logger.getLogger("akka").setLevel(Level.WARN);
-        cleanDir(OUTPUT);
         
         // set up spark
         SparkConf conf =

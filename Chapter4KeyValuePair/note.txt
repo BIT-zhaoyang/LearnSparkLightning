@@ -1,0 +1,25 @@
+Overview:
+0. Convert to Pair RDD.
+1. Basic usage of Key/Value pairs.
+2. Advanced feature of using partitioning.
+
+1. Creating Pair RDDs
+Creating Pair RDDs is in fact easy. We just need to create a RDD composed of
+tuples. Python and Scala have builtin tuple type, however, Java doesn't.
+Instead, Java use the scala.Tuple2 class. This class provides ._1() and ._2()
+functions to access its elements.
+
+If we have a regular RDD. We can get a Pair RDD by using the map() function.
+Remember from Chapter3, Java has an explicit specified RDD type, JavaPairRDD.
+To create this special RDD, we need to use corresponding map function,
+mapToPair(). One example is as follow:
+
+PairFunction<String, String, String> keyData = 
+    new PairFunction<String, String, String>() {
+        public Tuple2<String, String> call(String x) {
+            // use the first word as key
+            return new Tuple2(x.split(" ")[0], x);
+        }
+    };
+JavaPairRDD<String, String> pairs = lines.mapToPair(keyData);
+    
