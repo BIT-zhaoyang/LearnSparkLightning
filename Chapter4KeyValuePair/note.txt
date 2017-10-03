@@ -23,3 +23,18 @@ PairFunction<String, String, String> keyData =
     };
 JavaPairRDD<String, String> pairs = lines.mapToPair(keyData);
     
+2. Common Operations on Pair RDD
+Pair RDD is still RDD. The special point is that, it composes of pairs(Tuple2
+object in Java and Scala). It's not surprising Pair RDD supports common
+operations defined for normal RDD.
+
+For exmaple, to filter a Pair RDD, we can do as follow:
+Function<Tuple2<String, String>, Boolean> longWordFilter = 
+    new Function<Tuple2<String, String>, Boolean>() {
+        public Boolean call(Tuple2<String, String> keyValue) {
+            return (keyValue._2().length() < 20);
+        }
+    };
+JavaPairRDD<String, String> result = pairs.filter(longWordFilter);
+
+
