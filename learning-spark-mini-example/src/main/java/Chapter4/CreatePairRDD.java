@@ -31,6 +31,7 @@ public class CreatePairRDD {
         JavaPairRDD<String, String> pairs = lines.mapToPair(keyData);
         lines.persist(StorageLevel.MEMORY_ONLY());
         pairs.take(100).forEach(System.out::println);
+        sc.stop();
     }
     
 }
