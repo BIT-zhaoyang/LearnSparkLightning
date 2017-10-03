@@ -2,6 +2,8 @@ package chapter2;
 
 import java.util.Arrays;
 
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -14,8 +16,10 @@ public class WordCount {
     public static void main(String[] args) {
         String inputFile = "shakespear.txt";
         String outputFile = "result";
+        Logger.getLogger("org").setLevel(Level.WARN);
+        Logger.getLogger("akka").setLevel(Level.WARN);
         
- SparkConf conf =
+        SparkConf conf =
                 new SparkConf().setMaster("local").setAppName("wordCount");
         JavaSparkContext sc = new JavaSparkContext(conf);
         JavaRDD<String> input = sc.textFile(inputFile);
@@ -30,22 +34,23 @@ public class WordCount {
         JavaRDD<String> words = input
                 .flatMap(x -> (Iterable<String>) Arrays.asList(x.split(" ")));
         
-//        JavaPairRDD<String, Integer> counts =
-//                words.mapToPair(new PairFunction<String, String, Integer>() {
-//                    public Tuple2<String, Integer> call(String x) {
-//                        return new Tuple2(x, 1);
-//                    }
-//                }).reduceByKey(new Function2<Integer, Integer, Integer>() {
-//                    public Integer call(Integer x, Integer y) {
-//                        return x + y;
-//                    }
-//                });
+        // JavaPairRDD<String, Integer> counts =
+        // words.mapToPair(new PairFunction<String, String, Integer>() {
+        // public Tuple2<String, Integer> call(String x) {
+        // return new Tuple2(x, 1);
+        // }
+        // }).reduceByKey(new Function2<Integer, Integer, Integer>() {
+        // public Integer call(Integer x, Integer y) {
+        // return x + y;
+        // }
+        // });
         
-        JavaPairRDD<String, Integer> counts =
-                words.mapToPair((String x) -> new Tuple2(x, 1))
-                        .reduceByKey((x, y) -> ((Integer)x + (Integer)y));
-        counts.saveAsTextFile(outputFile);
-        
+        JavaPairRDD<String,
+                Integer> counts = words
+                        .mapToPair((String x) -> new Tuple2(x, 1))
+                        .reduceByKey((x, y) -> ((Integer) x + (Integer) y));
+        // counts.saveAsTextFile(outputFile);
+        counts.collect().forEach(System.out::println);
         sc.stop();
     }
     
