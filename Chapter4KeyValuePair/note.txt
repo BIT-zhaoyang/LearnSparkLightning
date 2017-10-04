@@ -37,4 +37,28 @@ Function<Tuple2<String, String>, Boolean> longWordFilter =
     };
 JavaPairRDD<String, String> result = pairs.filter(longWordFilter);
 
+Basically, operations on Pair RDD doesn't have a big difference with
+operations on normal RDD. I will skip the rest here.
+
+3. Partition is used to group data in a certain way, in advance. Once the RDD
+has been partitioned, further operations, which need partition, will not
+partition this RDD any more. Instead, Spark will use the already existing
+parition to complete operations such as join(), which is key-oriented. This
+advanced partition can save both communication and operation. Thus, the
+execution speed can improve dramastically.
+(Refer to Figure 4-4 and 4-5 in book 'Learning Spark Lightning')
+
+One caveat is, after partition a RDD, we have to use persist() to preserve the
+partition. Otherwise, the partitioned information will be lost. Executing
+further operations will re-evaluate and re-partition the RDD again.
+
+Supplying partition information manually is not the only way to create a
+partition. Many PairRDD operations creates a partition internally. These
+operations include: cogroup(), groupWith(), join(), leftOuterJoin(),
+rightOuterJoin(), ... , etc. So, after calling join() operation on two RDDs,
+calling reduceByKey() on the joined result will be significantly faster, since
+the reduceByKey() can use partition information from join().
+
+Besides creating partition internally, some operations will also invalid
+partition operations. An example is map().
 
